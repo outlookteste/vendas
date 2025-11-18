@@ -1,0 +1,109 @@
+<!DOCTYPE html><html lang="pt-BR"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Envio Manual para UTMify</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+    label { display: block; margin-top: 10px; }
+    input, button, select { width: 100%; padding: 10px; margin-top: 5px; }
+    .success { color: green; margin-top: 15px; }
+    .error { color: red; margin-top: 15px; }
+  </style>
+</head>
+<body>
+  <h1>Enviar Venda Manualmente para UTMify</h1>
+
+  <label>Nome:</label>
+  <input id="name" type="text" placeholder="Nome do cliente">
+
+  <label>Email:</label>
+  <input id="email" type="email" placeholder="Email do cliente">
+
+  <label>Telefone:</label>
+  <input id="phone" type="text" placeholder="Telefone com DDD">
+
+  <label>CPF:</label>
+  <input id="cpf" type="text" placeholder="Somente números">
+
+  <label>Valor (centavos):</label>
+  <input id="value" type="number" placeholder="Ex: 17839">
+
+  <label>ID da transação (txId):</label>
+  <input id="txid" type="text" placeholder="Ex: xxxxxxx">
+
+  <button onclick="enviarManual()">Enviar Venda para UTMify</button>
+
+  <div id="response"></div>
+
+<script>
+  function enviarManual() {
+    const name = document.getElementById('name').value;
+    const email = document.getElementById('email').value;
+    const phone = document.getElementById('phone').value;
+    const cpf = document.getElementById('cpf').value.replace(/\D/g, ''); // remove pontuação
+    const value = parseInt(document.getElementById('value').value);
+    const txId = document.getElementById('txid').value;
+
+    const payload = {
+  orderId: txId,
+  platform: 'VivaSorte',
+  paymentMethod: 'pix',
+  status: 'paid',
+  createdAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
+  approvedDate: new Date().toISOString().slice(0, 19).replace('T', ' '),
+  refundedAt: null,
+  customer: {
+    name, email, phone,
+    document: cpf,
+    country: 'BR',
+    ip: 'manual-envio'
+  },
+  products: [{
+    id: txId,
+    name: 'FRONT N TRACKADO',
+    planId: null,
+    planName: null,
+    quantity: 1,
+    priceInCents: value
+  }],
+  trackingParameters: {
+    utm_source: '',
+    utm_medium: '',
+    utm_campaign: '',
+    utm_content: '',
+    utm_term: ''
+  },
+  commission: {
+    totalPriceInCents: value,
+    gatewayFeeInCents: 0,
+    userCommissionInCents: value
+  },
+  isTest: false
+};
+
+    fetch('https://api.utmify.com.br/api-credentials/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-token': ' mUtCzIgMzBwztKsR3FYmvbRnwGbljrngaF8g' // troque se necessário
+      },
+      body: JSON.stringify(payload)
+    })
+    .then(res => {
+      if (!res.ok) return res.text().then(text => { throw new Error(text); });
+      return res.json();
+    })
+    .then(json => {
+      document.getElementById('response').innerHTML = '<div class="success">Enviado com sucesso!</div>';
+      console.log('[UTMIFY]: Venda enviada', json);
+    })
+    .catch(err => {
+      console.error('[UTMIFY] Erro detalhado:', err.message || err);
+      document.getElementById('response').innerHTML = '<div class="error">Erro ao enviar venda. Veja o console.</div>';
+    });
+  }
+</script>
+
+
+
+</body></html>
